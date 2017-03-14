@@ -14,6 +14,10 @@ namespace MusicCodes {
 		uint8_t getPitch() const;
 		int getDuration() const;
 		int getDots() const;
+		// Whether this is a valid note
+		operator bool() const;
+		// Returns an invalid note
+		static Note InvalidNote();
 		// An array of note names
 		static const std::string NOTE_NAMES[];
 	private:
