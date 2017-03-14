@@ -367,10 +367,12 @@ namespace MusicCodes {
 			// The note is currently turned on.
 			// Get ratio of this note length to a quarter note. For example, an eighth note gets a ratio
 			// of 0.5 because it is half of a quarter note. Round to the nearest multiple of the shortest note.
+			// Also increase the note duration by 5% because humans and software insert a small gap between notes.
 			double fractionOfQuarterNote = round(
 				(double)(ticksSinceBeginningOfTrack - on->second) /            // Number of ticks since beginning of note
 				parent->file->getTicksPerQuarterNote(parent->lastSeenTempo) /  // Number of ticks per quarter note
-				SHORTEST_NOTE
+				SHORTEST_NOTE *
+				1.05                                                           // Adjust note duration by 5% to fill gap between notes
 			) * SHORTEST_NOTE;
 			// Before running this through the logarithm function, we have to make sure that it isn't zero or negative.
 			if(fractionOfQuarterNote > 0){
