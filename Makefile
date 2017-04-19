@@ -9,3 +9,6 @@ PARTS=\
 
 halfsteps: $(foreach part, $(PARTS), $(part).o) halfsteps.o
 	$(CC) $(foreach part, $(PARTS), $(part).o) halfsteps.o -o halfsteps $(CFLAGS)
+
+revelpianotime: $(foreach part, $(PARTS), $(part).o) revelpianotime.o
+	$(CC) $(foreach part, $(PARTS), $(part).o) revelpianotime.o -o revelpianotime $(CFLAGS)

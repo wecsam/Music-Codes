@@ -1,7 +1,7 @@
 #include <cmath>
 #include "Note.h"
 namespace MusicCodes {
-	Note::Note(uint8_t pitch, int duration, int dots) : pitch(pitch), duration(duration), dots(dots) {}
+	Note::Note(uint8_t pitch, int duration, int dots, double start) : pitch(pitch), duration(duration), dots(dots), start(start) {}
 	uint8_t Note::getPitch() const {
 		return pitch;
 	}
@@ -10,6 +10,9 @@ namespace MusicCodes {
 	}
 	int Note::getDots() const {
 		return dots;
+	}
+	double Note::getStart() const {
+		return start;
 	}
 	Note::operator bool() const {
 		return pitch <= 127 && dots >= 0;

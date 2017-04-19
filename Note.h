@@ -10,10 +10,11 @@ namespace MusicCodes {
 	class Note {
 		friend std::ostream& operator<<(std::ostream&, const Note&);
 	public:
-		Note(uint8_t pitch, int duration, int dots);
+		Note(uint8_t pitch, int duration, int dots, double start = 0);
 		uint8_t getPitch() const;
 		int getDuration() const;
 		int getDots() const;
+		double getStart() const;
 		// Whether this is a valid note
 		operator bool() const;
 		// Returns an invalid note
@@ -30,6 +31,8 @@ namespace MusicCodes {
 		// For example, for a double-dotted whole note, duration=0 and dots=2.
 		int duration;
 		int dots;
+		// The number of seconds since the beginning of the MIDI track that this note was started.
+		double start;
 	};
 }
 #endif

@@ -27,6 +27,7 @@
 *.out
 *.app
 halfsteps
+revelpianotime
 
 # =========================
 # Operating System Files

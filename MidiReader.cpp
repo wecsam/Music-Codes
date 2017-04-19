@@ -231,11 +231,11 @@ namespace MusicCodes {
 						// The length should be three bytes.
 						if(metaLength == 3){
 							// The length is correct.
-							// Copy each byte into lastSeenTempo in Big Endian order.
-							*((char*)&lastSeenTempo) = 0;
-							*((char*)&lastSeenTempo + 1) = file->input.get();
+							// Copy each byte into lastSeenTempo.
+							*((char*)&lastSeenTempo + 3) = 0;
 							*((char*)&lastSeenTempo + 2) = file->input.get();
-							*((char*)&lastSeenTempo + 3) = file->input.get();
+							*((char*)&lastSeenTempo + 1) = file->input.get();
+							*((char*)&lastSeenTempo + 0) = file->input.get();
 						}else{
 							// The length is incorrect.
 							file->skipBytes(metaLength);
@@ -396,7 +396,7 @@ namespace MusicCodes {
 				// If another note that started after this one but finished before this one is already in the priority_queue,
 				// this note will move up ahead of it (because that's how a priority_queue works).
 				// The emplace() method requires C++ 2011.
-				pastNotes.emplace(midiChannel, ticksSinceBeginningOfTrack, Note(p, wholePart, dots));
+				pastNotes.emplace(midiChannel, ticksSinceBeginningOfTrack, Note(p, wholePart, dots, 0.000001 * on->second / parent->file->midiDivision * parent->lastSeenTempo));
 			}
 			// Erase the note from the map of notes that are on.
 			notesThatAreOn[midiChannel].erase(on);
