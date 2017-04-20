@@ -12,15 +12,18 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 #include "MidiReader.h"
 #include "Note.h"
 using namespace std;
 using namespace MusicCodes;
 
-// The lowest note that can be played by pressing a key in Piano Time is a C3,
-// which corresponds to MIDI note 48. Starting from C3, 36 half steps can be
-// played by pressing a key, and all 36 half steps are mapped in MIDI_TO_KEY.
-#define LOWEST_NOTE 48
+// In Piano Time (and in most music applications), the octave starts on a C.
+// Three octaves are playable by pressing keys on the keyboard, and the 
+// octaves can be adjusted by changing the Keyboard Start Octave option on the
+// toolbar. The keys for the 36 playable notes (3 octaves) are in MIDI_TO_KEY.
+// MIDI_TO_KEY[0] is a C. All of the notes in the music must be in the next
+// 36 half steps.
 const char MIDI_TO_KEY[] = "z1x2cv3b4n5ma6s7df8g9h0jqiwoerptkylu";
 
 int main(int argc, char** argv){
@@ -61,6 +64,32 @@ int main(int argc, char** argv){
 		}
 		// Print out a summary of the MIDI file.
 		cout << "MIDI: " << midiread << '\n';
+		// Read the notes into a vector so that we can iterate over them multiple times.
+		// During the first iteration, also find the highest and lowest notes.
+		vector<Note> notes;
+		Note n = Note::InvalidNote();
+		uint8_t lowestNote = 0xff, highestNote = 0;
+		while((n = midiread.getNextNote())){
+			cout << (unsigned int)n.getPitch() << '\t' << n.getStart() << '\n';
+			if(n.getPitch() < lowestNote){
+				lowestNote = n.getPitch();
+			}
+			if(n.getPitch() > highestNote){
+				highestNote = n.getPitch();
+			}
+			notes.push_back(move(n));
+		}
+		// Get the C below the lowest note and the C above the highest note.
+		// If the lowest note is a C, then it does not need to be adjusted.
+		// if the highest note is a C, however, the range has to be extended up an octave.
+		// That's because 36 half steps above a C is a B.
+		lowestNote -= lowestNote % 12;
+		highestNote += 12 - (highestNote % 12) - 1;
+		if(highestNote - lowestNote >= 36){
+			cerr << "The range of this track is more than three octaves (from "
+				<< (unsigned int)lowestNote << " to " << (unsigned int)highestNote << ").\n";
+			continue;
+		}
 		// Create a new AHK file.
 		ofstream ahk(string(argv[i]) + ".ahk");
 		if(!ahk){
@@ -69,8 +98,8 @@ int main(int argc, char** argv){
 			continue;
 		}
 		ahk << "; Open Piano Time by Revel Software, wait for it to load, and switch to it.\n"
-			<< "Run, C:\\Windows\\explorer.exe shell:appsFolder\\RevelSoftware.PianoTime_rm1v733ay04k0!App\n"
-			<< "WinWait, Piano Time\n"
+			<< "Run, C:\\Windows\\System32\\cmd.exe /c \"C:\\Windows\\explorer.exe shell:appsFolder\\RevelSoftware.PianoTimePro_rm1v733ay04k0!App\"\n"
+			<< "WinWait, Piano Time Pro\n"
 			<< "WinActivate\n"
 			<< "; Make sure that this thread will not be interrupted.\n"
 			<< "Critical, 50\n"
@@ -78,27 +107,20 @@ int main(int argc, char** argv){
 			<< "DllCall(\"QueryPerformanceFrequency\", \"Int64*\", PerformanceFrequency)\n"
 			<< "DllCall(\"QueryPerformanceCounter\", \"Int64*\", StartTime)\n"
 			<< "; For every note, wait until its start time and then send the keystroke.\n";
-		// Iterate over the notes.
-		Note n = Note::InvalidNote();
-		while((n = midiread.getNextNote())){
-			cout << (unsigned int)n.getPitch() << '\t' << n.getStart() << '\n';
-			if(LOWEST_NOTE <= n.getPitch() && n.getPitch() - LOWEST_NOTE < 36){
-				ahk << "; " << n.getStart() << " seconds: " << n << '\n'
-					<< "Loop\n"
-					<< "{\n"
-					<< "\tDllCall(\"QueryPerformanceCounter\", \"Int64*\", CurrentTime)\n"
-					<< "\tIf (CurrentTime - StartTime) / PerformanceFrequency >= " << n.getStart() << '\n'
-					<< "\t\tbreak\n"
-					<< "}\n"
-					<< "SendInput, " << MIDI_TO_KEY[n.getPitch() - LOWEST_NOTE] << '\n';
-			}else{
-				cout << " > That note is not in the playable range.\n";
-			}
+		for(Note& n : notes){
+			ahk << "; " << n.getStart() << " seconds: " << n << '\n'
+				<< "Loop\n"
+				<< "{\n"
+				<< "\tDllCall(\"QueryPerformanceCounter\", \"Int64*\", CurrentTime)\n"
+				<< "\tIf (CurrentTime - StartTime) / PerformanceFrequency >= " << n.getStart() << '\n'
+				<< "\t\tbreak\n"
+				<< "}\n"
+				<< "SendInput, " << MIDI_TO_KEY[n.getPitch() - lowestNote] << '\n';
 		}
 		ahk << "; Let the user know that this script has completed.\n"
 			<< "Sleep, 1000\n"
 			<< "MsgBox, Done.\n";
-		cout << endl;
+		cout << "Script generation complete. The start octave should be set to " << lowestNote / 12 - 1 << '.' << endl;
 	}
 	return numFailures;
 }
